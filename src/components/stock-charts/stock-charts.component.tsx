@@ -149,7 +149,7 @@ export const StockChartsComponent: React.FC = () => {
           }}
           sx={{ width: "40%" }}
           renderInput={(params) => (
-            <TextField {...params} label="NASDAQ Stocks" />
+            <TextField {...params} label={marketType === "nasdaq" ? "NASDAQ Stocks" : "FOREX Stocks"} />
           )}
         />
         <ToggleButtonGroup
