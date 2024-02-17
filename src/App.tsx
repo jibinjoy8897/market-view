@@ -1,5 +1,4 @@
 import React from "react";
-import logo from "./logo.svg";
 import "./App.css";
 import StockChartsComponent from "./components/stock-charts/stock-charts.component";
 

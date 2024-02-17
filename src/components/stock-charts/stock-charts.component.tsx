@@ -8,6 +8,8 @@ import TextField from "@mui/material/TextField";
 import Autocomplete from "@mui/material/Autocomplete";
 import { nasdaqStocks } from "../../data/nasdaqStockDetails";
 import { autocompleteDummyData } from "../../data/autocompleteDummy";
+import { forexStocks } from "../../data/forexDetails";
+
 import {
   FormControl,
   InputLabel,
@@ -15,58 +17,26 @@ import {
   MenuItem,
   SelectChangeEvent,
   Box,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
+import ReactApexChartsComponent from "./react-apexcharts/react-apexcharts.component";
 
 export const StockChartsComponent: React.FC = () => {
   const [stockData, setStockData] = useState<any[]>([]);
   const [maximumLimitMessage, setMaximumLimitMessage] = useState<string>(null);
-  const [stockTicker, setStockTicker] = useState<string>("AAPL");
+  const [selectedTickerDetails, setSelectedTickerDetails] = useState<any>({
+    "Company Name": "Apple Inc.",
+    "Financial Status": "N",
+    "Market Category": "Q",
+    "Round Lot Size": 100.0,
+    "Security Name": "Apple Inc. - Common Stock",
+    Symbol: "AAPL",
+    "Test Issue": "N",
+  });
+  const [stockTickerSymbol, setStockTickerSymbol] = useState<string>("AAPL");
   const [timeframe, setTimeFrame] = useState<string>("1D");
-
-  // useEffect(() => {
-  //   // Replace 'YOUR_API_KEY' with your Alpha Vantage API key
-  //   const apiKey = "8CTAR04JWTWNGY5N";
-  //   const symbol = "AAPL"; // Replace with the desired stock symbol
-  //   const apiUrl = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${apiKey}`;
-
-  //   const formattedData = Object.keys(charts).map((date) => ({
-  //     x: new Date(date).getTime(),
-  //     //   y: parseFloat(charts[date]["4. close"]),
-  //     y: [
-  //       parseFloat(charts[date]["1. open"]),
-  //       parseFloat(charts[date]["2. high"]),
-  //       parseFloat(charts[date]["3. low"]),
-  //       parseFloat(charts[date]["4. close"]),
-  //     ],
-  //   }));
-
-  //   setStockData(formattedData);
-  //   console.log("CS DATA>>>", formattedData);
-  //   // setStockData(demoCSData);
-
-  //   // axios
-  //   //   .get(apiUrl)
-  //   //   .then((response) => {
-  //   //     console.log("APPLE RESPONSE ", response);
-  //   //     downloadJSON(response.data);
-  //   //     const timeSeriesData = response.data["Time Series (Daily)"];
-  //   //     const formattedData = Object.keys(timeSeriesData).map((date) => ({
-  //   //       x: new Date(date),
-  //   //       //   y: parseFloat(timeSeriesData[date]["4. close"]),
-  //   //       y: [
-  //   //         parseFloat(timeSeriesData[date]["1. open"]),
-  //   //         parseFloat(timeSeriesData[date]["2. high"]),
-  //   //         parseFloat(timeSeriesData[date]["3. low"]),
-  //   //         parseFloat(timeSeriesData[date]["4. close"]),
-  //   //       ],
-  //   //     }));
-
-  //   //     setStockData(formattedData);
-  //   //   })
-  //   //   .catch((error) => {
-  //   //     console.error("Error fetching stock data:", error);
-  //   //   });
-  // }, []);
+  const [marketType, setMarketType] = useState<string>("nasdaq");
 
   useEffect(() => {
     setMaximumLimitMessage(null);
@@ -83,9 +53,12 @@ export const StockChartsComponent: React.FC = () => {
       tf = "5/minute";
     }
     // Replace 'YOUR_API_KEY' with your Polygon.io API key
+    const defaultStockTicker = marketType === "nasdaq" ? "AAPL" : "EURUSD";
     const apiKey = "112nYFuYxMpE9koZ8h4grneEERTJLkgb";
-    const symbol = stockTicker ? stockTicker : "AAPL"; // Replace with the desired stock symbol
-    const apiUrl = `https://api.polygon.io/v2/aggs/ticker/${symbol}/range/${tf}/2023-09-09/${
+    const symbol = stockTickerSymbol ? stockTickerSymbol : defaultStockTicker; // Replace with the desired stock symbol
+    const apiUrl = `https://api.polygon.io/v2/aggs/ticker/${
+      marketType === "forex" ? "C:" : ""
+    }${symbol}/range/${tf}/2023-09-09/${
       new Date().toISOString().split("T")[0]
     }?adjusted=true&sort=asc&limit=120&apiKey=${apiKey}`;
 
@@ -120,74 +93,58 @@ export const StockChartsComponent: React.FC = () => {
           setMaximumLimitMessage(error.response.data.error);
         }
       });
-
-    // const formattedData = polygonIOData.map((dayData) => ({
-    //   x: new Date(dayData["t"]),
-    //   y: [
-    //     parseFloat(dayData["o"].toString()),
-    //     parseFloat(dayData["h"].toString()),
-    //     parseFloat(dayData["l"].toString()),
-    //     parseFloat(dayData["c"].toString()),
-    //   ],
-    // }));
-    // setStockData(formattedData);
-  }, [stockTicker, timeframe]);
-
-  const downloadJSON = (data) => {
-    var dataStr =
-      "data:text/json;charset=utf-8," +
-      encodeURIComponent(JSON.stringify(data));
-    var downloadAnchorNode = document.createElement("a");
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "chart" + ".json");
-    document.body.appendChild(downloadAnchorNode); // required for firefox
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-  };
-
-  const chartOptions = {
-    options: {
-      xaxis: {
-        type: "datetime",
-      },
-    },
-    series: [
-      {
-        name: "Stock Price",
-        data: stockData,
-      },
-    ],
-  };
+  }, [stockTickerSymbol, timeframe]);
 
   const timeFrameHandleChange = (event: SelectChangeEvent) => {
     setTimeFrame(event.target.value as string);
   };
 
+  const marketToggleHandleChange = (
+    event: React.MouseEvent<HTMLElement>,
+    value: any
+  ) => {
+    setMarketType(value);
+    if (value === "nasdaq") {
+      setStockTickerSymbol("AAPL");
+      setSelectedTickerDetails({
+        "Company Name": "Apple Inc.",
+        "Financial Status": "N",
+        "Market Category": "Q",
+        "Round Lot Size": 100.0,
+        "Security Name": "Apple Inc. - Common Stock",
+        Symbol: "AAPL",
+        "Test Issue": "N",
+      });
+    } else {
+      setStockTickerSymbol("EURUSD");
+      setSelectedTickerDetails({
+        "Security Name": "Euro/US DOLLAR",
+        Symbol: "EURUSD",
+      });
+    }
+  };
+
   return (
     <>
       <span style={{ fontSize: "2rem" }}>
-        Market View Powered by <a target="blank" href="https://polygon.io/">Polygon.io</a>
+        Market View Powered by{" "}
+        <a target="blank" href="https://polygon.io/">
+          Polygon.io
+        </a>
       </span>
       <Box display="flex" justifyContent="space-between" pt={2}>
         <Autocomplete
           disablePortal
           id="combo-box-demo"
-          options={nasdaqStocks}
-          defaultValue={{
-            "Company Name": "Apple Inc.",
-            "Financial Status": "N",
-            "Market Category": "Q",
-            "Round Lot Size": 100.0,
-            "Security Name": "Apple Inc. - Common Stock",
-            Symbol: "AAPL",
-            "Test Issue": "N",
-          }}
+          options={marketType === "nasdaq" ? nasdaqStocks : forexStocks}
+          value={selectedTickerDetails}
           getOptionLabel={(option) =>
             option["Security Name"] + `(${option.Symbol})`
           }
           onChange={(event: React.SyntheticEvent, value: any) => {
             if (value) {
-              setStockTicker(value.Symbol);
+              setStockTickerSymbol(value.Symbol);
+              setSelectedTickerDetails(value);
             }
           }}
           sx={{ width: "40%" }}
@@ -195,6 +152,16 @@ export const StockChartsComponent: React.FC = () => {
             <TextField {...params} label="NASDAQ Stocks" />
           )}
         />
+        <ToggleButtonGroup
+          color="primary"
+          value={marketType}
+          exclusive
+          onChange={marketToggleHandleChange}
+          aria-label="Platform"
+        >
+          <ToggleButton value="nasdaq">NASDAQ</ToggleButton>
+          <ToggleButton value="forex">FOREX</ToggleButton>
+        </ToggleButtonGroup>
         <FormControl sx={{ width: "20%" }}>
           <InputLabel id="time-frame-simple-select-label">
             Time Frame
@@ -224,30 +191,7 @@ export const StockChartsComponent: React.FC = () => {
         <>
           <h2>Stock Price Chart</h2>
           {stockData.length > 0 ? (
-            <Chart
-              type="candlestick"
-              options={{
-                xaxis: {
-                  type: "datetime",
-                },
-
-                yaxis: {
-                  tooltip: {
-                    enabled: true,
-                  },
-                },
-                plotOptions: {
-                  candlestick: {
-                    colors: {
-                      upward: "#28ED12",
-                      downward: "#FB0A0A",
-                    },
-                  },
-                },
-              }}
-              series={chartOptions.series}
-              height={450}
-            />
+            <ReactApexChartsComponent stockData={stockData} />
           ) : (
             <p>Loading...</p>
           )}
