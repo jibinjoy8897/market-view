@@ -37,63 +37,75 @@ export const StockChartsComponent: React.FC = () => {
   const [stockTickerSymbol, setStockTickerSymbol] = useState<string>("AAPL");
   const [timeframe, setTimeFrame] = useState<string>("1D");
   const [marketType, setMarketType] = useState<string>("nasdaq");
+  const [timer, setTimer] = useState<number>(0);
+  const [isDisabled, setIsDisabled] = useState<boolean>(false);
 
   useEffect(() => {
-    setMaximumLimitMessage(null);
-    let tf = "";
-    if (timeframe === "1D") {
-      tf = "1/day";
-    } else if (timeframe === "1hr") {
-      tf = "1/hour";
-    } else if (timeframe === "30min") {
-      tf = "30/minute";
-    } else if (timeframe === "15min") {
-      tf = "15/minute";
-    } else if (timeframe === "5min") {
-      tf = "5/minute";
-    }
-    // Replace 'YOUR_API_KEY' with your Polygon.io API key
-    const defaultStockTicker = marketType === "nasdaq" ? "AAPL" : "EURUSD";
-    const apiKey = "112nYFuYxMpE9koZ8h4grneEERTJLkgb";
-    const symbol = stockTickerSymbol ? stockTickerSymbol : defaultStockTicker; // Replace with the desired stock symbol
-    const apiUrl = `https://api.polygon.io/v2/aggs/ticker/${
-      marketType === "forex" ? "C:" : ""
-    }${symbol}/range/${tf}/2023-09-09/${
-      new Date().toISOString().split("T")[0]
-    }?adjusted=true&sort=asc&limit=120&apiKey=${apiKey}`;
+    // Timer countdown
+    if (timer > 0) {
+      setTimeout(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    } else {
+      setIsDisabled(false);
+      setMaximumLimitMessage(null);
+      let tf = "";
+      if (timeframe === "1D") {
+        tf = "1/day";
+      } else if (timeframe === "1hr") {
+        tf = "1/hour";
+      } else if (timeframe === "30min") {
+        tf = "30/minute";
+      } else if (timeframe === "15min") {
+        tf = "15/minute";
+      } else if (timeframe === "5min") {
+        tf = "5/minute";
+      }
+      // Replace 'YOUR_API_KEY' with your Polygon.io API key
+      const defaultStockTicker = marketType === "nasdaq" ? "AAPL" : "EURUSD";
+      const apiKey = "112nYFuYxMpE9koZ8h4grneEERTJLkgb";
+      const symbol = stockTickerSymbol ? stockTickerSymbol : defaultStockTicker; // Replace with the desired stock symbol
+      const apiUrl = `https://api.polygon.io/v2/aggs/ticker/${
+        marketType === "forex" ? "C:" : ""
+      }${symbol}/range/${tf}/2023-09-09/${
+        new Date().toISOString().split("T")[0]
+      }?adjusted=true&sort=asc&limit=120&apiKey=${apiKey}`;
 
-    axios
-      .get(apiUrl)
-      .then((response) => {
-        console.log("APPLE RESPONSE ", response);
-        if (response.data.queryCount > 0) {
-          const dailyTFPolygonIO = response.data.results;
-          const formattedData = dailyTFPolygonIO.map((dayData) => ({
-            x: new Date(dayData["t"]),
-            y: [
-              parseFloat(dayData["o"]),
-              parseFloat(dayData["h"]),
-              parseFloat(dayData["l"]),
-              parseFloat(dayData["c"]),
-            ],
-          }));
-          setStockData(formattedData);
-        } else {
-          alert(
-            "Not able to provide chart data for this stock.Please try another one"
-          );
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching stock data:", error);
-        if (
-          error.response.data.error ===
-          "You've exceeded the maximum requests per minute, please wait or upgrade your subscription to continue. https://polygon.io/pricing"
-        ) {
-          setMaximumLimitMessage(error.response.data.error);
-        }
-      });
-  }, [stockTickerSymbol, timeframe]);
+      axios
+        .get(apiUrl)
+        .then((response) => {
+          console.log("APPLE RESPONSE ", response);
+          if (response.data.queryCount > 0) {
+            const dailyTFPolygonIO = response.data.results;
+            const formattedData = dailyTFPolygonIO.map((dayData) => ({
+              x: new Date(dayData["t"]),
+              y: [
+                parseFloat(dayData["o"]),
+                parseFloat(dayData["h"]),
+                parseFloat(dayData["l"]),
+                parseFloat(dayData["c"]),
+              ],
+            }));
+            setStockData(formattedData);
+          } else {
+            alert(
+              "Not able to provide chart data for this stock.Please try another one"
+            );
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching stock data:", error);
+          if (
+            error.response.data.error ===
+            "You've exceeded the maximum requests per minute, please wait or upgrade your subscription to continue. https://polygon.io/pricing"
+          ) {
+            setMaximumLimitMessage(error.response.data.error);
+            setTimer(60);
+            setIsDisabled(true);
+          }
+        });
+    }
+  }, [stockTickerSymbol, timeframe, timer]);
 
   const timeFrameHandleChange = (event: SelectChangeEvent) => {
     setTimeFrame(event.target.value as string);
@@ -147,9 +159,13 @@ export const StockChartsComponent: React.FC = () => {
               setSelectedTickerDetails(value);
             }
           }}
+          disabled={isDisabled}
           sx={{ width: "40%" }}
           renderInput={(params) => (
-            <TextField {...params} label={marketType === "nasdaq" ? "NASDAQ Stocks" : "FOREX Stocks"} />
+            <TextField
+              {...params}
+              label={marketType === "nasdaq" ? "NASDAQ Stocks" : "FOREX Stocks"}
+            />
           )}
         />
         <ToggleButtonGroup
@@ -158,6 +174,7 @@ export const StockChartsComponent: React.FC = () => {
           exclusive
           onChange={marketToggleHandleChange}
           aria-label="Platform"
+          disabled={isDisabled}
         >
           <ToggleButton value="nasdaq">NASDAQ</ToggleButton>
           <ToggleButton value="forex">FOREX</ToggleButton>
@@ -172,6 +189,7 @@ export const StockChartsComponent: React.FC = () => {
             value={timeframe}
             label="Time Frame"
             onChange={timeFrameHandleChange}
+            disabled={isDisabled}
           >
             <MenuItem value={"1D"}>1 Day</MenuItem>
             <MenuItem value={"1hr"}>1 Hour</MenuItem>
@@ -184,8 +202,8 @@ export const StockChartsComponent: React.FC = () => {
 
       {maximumLimitMessage ? (
         <h2>
-          You've exceeded the maximum requests per minute,Please try again after
-          1 minute
+          You've exceeded the maximum requests per minute,Please try again after{" "}
+          {timer}s
         </h2>
       ) : (
         <>
