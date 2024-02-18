@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/market-view/static/css/main.f855e6bc.css",
-    "main.js": "/market-view/static/js/main.39be14d0.js",
+    "main.js": "/market-view/static/js/main.9a067276.js",
     "index.html": "/market-view/index.html",
     "main.f855e6bc.css.map": "/market-view/static/css/main.f855e6bc.css.map",
-    "main.39be14d0.js.map": "/market-view/static/js/main.39be14d0.js.map"
+    "main.9a067276.js.map": "/market-view/static/js/main.9a067276.js.map"
   },
   "entrypoints": [
     "static/css/main.f855e6bc.css",
-    "static/js/main.39be14d0.js"
+    "static/js/main.9a067276.js"
   ]
 }
